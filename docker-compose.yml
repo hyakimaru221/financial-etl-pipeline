@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  etl_pipeline:
+    build: .
+    container_name: financial_etl_job
+    environment:
+      - DATABASE_URL=postgresql://admin:root@postgres_db:5432/finance_warehouse
+      - API_ENDPOINT=https://api.coingecko.com/api/v3/exchange_rates
+      - ETL_MAX_RETRIES=5
+      - ETL_API_TIMEOUT=15
+    depends_on:
+      - postgres_db
+
+  postgres_db:
+    image: postgres:15-alpine
+    container_name: finance_warehouse
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=root
+      - POSTGRES_DB=finance_warehouse
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
+
