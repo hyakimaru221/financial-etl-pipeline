@@ -1,15 +1,15 @@
-# Base image otimizada para produção
+# Optimized base image for production
 FROM python:3.10-slim
 
-# Configuração do diretório de trabalho
+# Set the working directory
 WORKDIR /app
 
-# Instalação de dependências (Crie um requirements.txt com: pandas sqlalchemy requests psycopg2-binary)
+# Install project dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copia o código fonte para o container
+# Copy the application source code into the container
 COPY . .
 
-# Comando de execução do pipeline
+# Run the ETL pipeline
 CMD ["python", "etl_pipeline.py"]
