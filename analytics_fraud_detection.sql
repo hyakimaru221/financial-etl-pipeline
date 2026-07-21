@@ -1,31 +1,29 @@
--- [CORE] Identificação de anomalias financeiras usando Window Functions
--- Objetivo: Achar usuários que gastaram mais de 20k em menos de 24h.
+-- ================================================================================
+-- Pipeline: Financial Fraud Detection
+-- Description: Cleans raw transactions, ensures idempotency, and flags high-risk data.
+-- ================================================================================
 
-WITH TransactionHistory AS (
+-- CTE to isolate valid transactions and prevent duplicate processing (Idempotency check)
+WITH CleanTransactions AS (
     SELECT 
+        transaction_id,
         user_id,
-        tx_id,
         amount,
-        date,
-        -- Calcula o gasto acumulado do usuário nas últimas 24 horas
-        SUM(amount) OVER (
-            PARTITION BY user_id 
-            ORDER BY date 
-            RANGE BETWEEN INTERVAL '24 HOURS' PRECEDING AND CURRENT ROW
-        ) as rolling_24h_spend
-    FROM fact_transactions
-    WHERE status = 'APPROVED'
+        created_at,
+        -- Using ROW_NUMBER to deduplicate records based on the latest timestamp
+        ROW_NUMBER() OVER(PARTITION BY transaction_id ORDER BY created_at DESC) as rn
+    FROM raw_transactions
+    WHERE amount IS NOT NULL
 )
 
+-- Final projection with business logic for the Risk Dashboard
 SELECT 
+    transaction_id,
     user_id,
-    tx_id,
     amount,
-    rolling_24h_spend,
     CASE 
-        WHEN rolling_24h_spend > 20000 THEN 'CRITICAL_ALERT'
-        ELSE 'NORMAL'
-    END as fraud_status
-FROM TransactionHistory
-WHERE rolling_24h_spend > 20000
-ORDER BY rolling_24h_spend DESC;
+        WHEN amount > 10000 THEN 'HIGH_RISK'
+        ELSE 'CLEAN'
+    END AS fraud_flag
+FROM CleanTransactions
+WHERE rn = 1;
