@@ -1,40 +1,15 @@
 -- ================================================================================
--- Pipeline: Financial Fraud Detection Analytics
--- Description: Cleans raw transactions, ensures idempotency, and flags high-risk data.
--- Engine: PostgreSQL / Amazon Redshift
+-- 5. Performance Optimization (Indexes for Window Functions)
 -- ================================================================================
 
--- 1. Create mock table for portfolio demonstration purposes
-CREATE TABLE IF NOT EXISTS raw_transactions (
-    transaction_id VARCHAR(50) PRIMARY KEY,
-    user_id VARCHAR(50),
-    amount DECIMAL(15, 2),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+-- Index for the Partition By clause (Accelerates user history lookup)
+CREATE INDEX IF NOT EXISTS idx_transactions_user_id 
+ON analytics_transactions(user_id);
 
--- 2. CTE to isolate valid transactions and prevent duplicate processing (Idempotency check)
-WITH CleanTransactions AS (
-    SELECT 
-        transaction_id,
-        user_id,
-        amount,
-        created_at,
-        -- Using ROW_NUMBER to deduplicate records based on the latest timestamp
-        ROW_NUMBER() OVER(PARTITION BY transaction_id ORDER BY created_at DESC) as rn
-    FROM raw_transactions
-    WHERE amount IS NOT NULL
-)
+-- Index for the Order By and Range clauses (Accelerates time-window heuristics)
+CREATE INDEX IF NOT EXISTS idx_transactions_created_at 
+ON analytics_transactions(created_at DESC);
 
--- 3. Final projection with business logic for the Risk Dashboard
-SELECT 
-    transaction_id,
-    user_id,
-    amount,
-    created_at,
-    CASE 
-        WHEN amount > 10000.00 THEN 'HIGH_RISK'
-        ELSE 'CLEAN'
-    END AS fraud_flag
-FROM CleanTransactions
-WHERE rn = 1
-ORDER BY created_at DESC;
+-- Composite index for the exact Window Function access pattern
+CREATE INDEX IF NOT EXISTS idx_transactions_user_time 
+ON analytics_transactions(user_id, created_at DESC);
