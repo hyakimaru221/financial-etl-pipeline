@@ -1,23 +1,25 @@
 # 🚀 Financial Data Pipeline: ETL & Fraud Detection
 
 ## 👁️ Architecture Overview
-A production-grade Data Engineering pipeline built to extract, sanitize, and model financial transactions in real-time. The core architecture is strictly focused on **Idempotency**, **Network Resilience (Exponential Backoff)**, and **Cloud Cost Optimization**.
+A production-grade Data Engineering pipeline built to extract, sanitize, and model financial transactions. The core architecture is strictly focused on **Absolute Idempotency (Batch UPSERTs)**, **Network Resilience (Exponential Backoff)**, and **Velocity-Based Fraud Heuristics**.
 
 ## ⚙️ Tech Stack
 - **Extraction & Transformation:** Python (Pandas, Requests)
-- **Storage:** PostgreSQL (Star Schema Modeling)
-- **Analytics:** Advanced SQL (CTEs, Window Functions)
-- **Orchestration:** Ready for Apache Airflow / AWS Lambda deployment
+- **Storage & Analytics:** PostgreSQL (Advanced SQL, CTEs, Window Functions, Performance Indexing)
+- **Infrastructure:** Docker & Docker Compose (Fully Containerized)
 
 ## 🩸 Business Value & Problem Statement
-Financial APIs fail, and transactional data often arrives dirty (nulls, type mismatches). This pipeline guarantees that:
-1. **Zero Duplication:** Transactions are never duplicated even if the script runs concurrently (Strict Idempotency).
-2. **Fault Tolerance:** Network drops are handled automatically without crashing the main job.
-3. **Fraud Flagging:** Suspicious transactions (> $10,000) are flagged at the transformation layer before reaching the Data Warehouse.
+Financial APIs fail, and transactional data often arrives dirty. This pipeline guarantees:
+1. **Zero Duplication:** Strict idempotency using PostgreSQL `ON CONFLICT DO UPDATE` (Batch UPSERT) to prevent data duplication even under concurrent executions.
+2. **Fault Tolerance:** Network drops are handled automatically via Exponential Backoff without crashing the main job.
+3. **Advanced Fraud Heuristics:** Flags suspicious transactions based on volume (> $10,000) AND velocity (e.g., > 3 transactions in a 10-minute window) using optimized SQL Window Functions.
 
-## 🚀 Deployment & Local Setup
+## 🚀 Deployment (Dockerized)
+The infrastructure is fully containerized for zero-friction deployment.
+
 1. Clone the repository.
-2. Install dependencies:
-   `pip install pandas sqlalchemy requests`
-3. Run the ETL job:
-   `python etl_pipeline.py`
+2. Spin up the ETL pipeline and the PostgreSQL Data Warehouse:
+   ```bash
+   docker-compose up -d --build
+   ```
+3. The pipeline will automatically extract, sanitize, and load the data into the database.
